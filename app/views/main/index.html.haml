@@ -1,17 +1,15 @@
-- currency = @state.testnet? ? "testnet peercoin" : "peercoin"
+- currency = @currency
+- title = "#{currency} faucet".titleize
+- content_for(:title, title)
 
 %header.main-header
   .header-content
-    %h1.title
-      - if @state.testnet?
-        Peercoin Testnet Faucet
-      - else
-        Peercoin Faucet
+    %h1.title= title
     %p.intro
       On this site you can give or receive free #{currency.pluralize}
     - if @state.testnet?
       .testnet-warning
-        .content Testnet peercoins are not real peercoins. They are only useful for developpers and have absolutely no monetary value!
+        .content #{currency.pluralize.capitalize} are not real coins. They are only useful for developpers and have absolutely no monetary value!
 %section.main-content
   %article.receive-section
     .content
@@ -19,6 +17,13 @@
       %p.description
         You can receive #{pluralize FaucetConfig["amount_per_request"], currency} just by filling the form below.
 
+      - if @state.empty?
+        .empty-faucet-warning
+          %p
+            %strong Warning:
+            The faucet is empty. Your request will not be processed until new coins are donated.
+          - if (url = FaucetConfig["donation_request_url"]).present?
+            %p You can request donations #{link_to "here", url}.
       .receive-form
         = form_for @coin_request, url: url_for do |f|
           - if @coin_request.errors.any?
@@ -45,9 +50,6 @@
       %p.address Address: #{@state.address}
       %p.description
         Your can give to others by sending #{currency.pluralize} to the address above.
-      - if FaucetConfig["donation_address"]
-        %p.donate
-          If you want to donate to this website, you can also send #{@state.testnet? ? "real" : ""} #{FaucetConfig["donation_currency"]} to #{FaucetConfig["donation_address"]}
 %section.bottom-section
   %article.state-section
     %h2.title Current state
@@ -71,18 +73,23 @@
             %td.address= transaction["address"]
             %td.confirmations= transaction["confirmations"]
             %td.fee= transaction["fee"]
-    %p.pending-requests-intro Pending requests:
+    - pending_requests = CoinRequest.not_fulfilled
+    %p.pending-requests-intro Pending requests (#{pending_requests.size}):
     %table.pending-requests
       %thead
         %tr
           %th.date Date (UTC)
           %th.address Address
       %tbody
-        - CoinRequest.not_fulfilled.each do |request|
+        - pending_requests.each do |request|
           %tr.request-row
             %td.date= l(request.created_at, format: :short)
             %td.address= request.address
+    .all-requests-link= link_to "All requests", requests_path
 %footer#footer
   .content
     .links
       = link_to "Project page", "https://github.com/sigmike/peercoin-faucet"
+
+  %a.github-ribbon{:href => "https://github.com/sigmike/peercoin-faucet"}
+    = image_tag "forkme_right_gray_6d6d6d.png", alt: "Fork me on GitHub", style: "position: absolute; top: 0; right: 0; border: 0;"

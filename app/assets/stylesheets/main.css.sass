@@ -30,10 +30,12 @@
   +grid-row
   
   .receive-section, .give-section
-    +grid-column(6)
+    +grid-column(12)
+    @media (min-width: 790px)
+      +grid-column(6)
 
     > .content
-      +panel
+      +panel($adjust: false)
 
       .errors
         +alert($alert-color)
@@ -69,6 +71,9 @@
   > .content
     @extend strong
 
+.empty-faucet-warning
+  +alert($warning-color)
+
 #footer
   +grid-row
   > .content
@@ -77,3 +82,10 @@
     .links
       +panel
       text-align: center
+
+@media #{$small-only}
+  .github-ribbon
+    display: none
+
+.all-requests-link
+  margin: 1em

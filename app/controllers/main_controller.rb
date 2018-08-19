@@ -1,7 +1,9 @@
 class MainController < ApplicationController
-  def index
-    @state = State.instance
+  BLOCKED_DNSBL = YAML.load(Rails.root.join("config/blocked_dnsbl.yaml").read)
 
+  before_filter :get_state
+
+  def index
     @coin_request = CoinRequest.new
     @coin_request.attributes = params[:coin_request].permit(:address) if params[:coin_request]
     if request.post? or request.put?
@@ -16,6 +18,10 @@ class MainController < ApplicationController
 
       dnsbl= DNSBL::Client.new
       matches = dnsbl.lookup(ip)
+      matches.select! do |match|
+        blocked_results = BLOCKED_DNSBL[match.dnsbl]
+        blocked_results and blocked_results.has_key?(match.result)
+      end
       if matches.any?
         message = "Your IP is blacklisted for the following reason(s): " + matches.map { |match| "#{match.meaning} (#{match.dnsbl})" }.join(", ")
         redirect_to root_path, flash: {error: message}
@@ -40,4 +46,8 @@ class MainController < ApplicationController
   end
 
   protected
+  def get_state
+    @state = State.instance
+    @currency = FaucetConfig["currency"] || (@state.testnet? ? "testnet peercoin" : "peercoin")
+  end
 end
